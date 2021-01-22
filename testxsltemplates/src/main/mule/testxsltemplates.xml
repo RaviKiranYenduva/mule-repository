@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:xml-module="http://www.mulesoft.org/schema/mule/xml-module"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/xml-module http://www.mulesoft.org/schema/mule/xml-module/current/mule-xml-module.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="99a0b58d-c3fe-4239-96b7-a419a9aae633" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="ddf688ce-57ac-461d-97d0-7f98ff2a1ff9" >
+		<file:connection workingDir="C:\Ravikiran\Work\MS\Mule4Studio735\testxsltemplates\src\main\resources\xsl"/>
+	</file:config>
+	<xml-module:config name="XML_Config" doc:name="XML Config" doc:id="6b3d5bd8-12a2-4923-9cbc-a881fe01243d" />
+	<flow name="testxsltemplatesFlow" doc:id="dfa90c69-1754-4e92-b271-e850b06eab0d" >
+		<http:listener doc:name="Listener" doc:id="47e0c6bb-decc-4666-98e6-120adf46491c" config-ref="HTTP_Listener_config" path="/callXSLT"/>
+		<logger level="INFO" doc:name="Logger" doc:id="41c179ea-15fd-4ff1-89fd-6fa90f4e9b47" />
+		<file:read doc:name="Read" doc:id="b5af1da5-a6e4-46e5-aead-94ac46f0007d" config-ref="File_Config" path="C:\Ravikiran\Work\MS\Mule4Studio735\testxsltemplates\src\main\resources\xsl\foodInformation2.xslt" target="xslTrans"/>
+		<xml-module:xslt-transform doc:name="XsltCallTemplate" doc:id="3575a31e-2ef8-413e-88de-a43298a1e1ef" config-ref="XML_Config">
+			<xml-module:xslt >#[vars.xslTrans]</xml-module:xslt>
+			<xml-module:context-properties ><![CDATA[#[{'foodType' : 'Good'}]]]></xml-module:context-properties>
+		</xml-module:xslt-transform>
+	</flow>
+</mule>
