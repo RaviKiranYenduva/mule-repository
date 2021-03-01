@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="81bdf2fd-9f82-48af-95ee-85d0304b4a41" file="Country_DVM.yaml" />
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="bea80344-c5fa-4128-bb2d-e64a616681ba" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="test-ravi-dvmFlow" doc:id="4e886a4e-9dcb-4b34-8992-d79d423e8122" >
+		<http:listener doc:name="Listener" doc:id="f4797708-4daa-4551-9bad-c92215638ea9" config-ref="HTTP_Listener_config" path="/testDVM"/>
+		<file:read doc:name="Read" doc:id="fb50e4b9-76e6-4d52-ad6a-8d817bfbfb04" path="C:\Users\workshop\AnypointStudio\studio-workspace\test-ravi-dvm\src\main\resources\Country_DVM.yaml" target="countryDVM"/>
+		<ee:transform doc:name="Transform Message" doc:id="ee712f91-f305-47ae-8d12-d071799eb1ea" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

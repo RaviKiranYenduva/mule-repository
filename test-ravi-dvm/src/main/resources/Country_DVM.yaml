@@ -1,0 +1,17 @@
+countries: 
+ country: 
+  - 
+   "system1": "GB-SYSTEM1"
+   "system2": "GB-SYSTEM2"
+   "system3": "GB-SYSTEM3"
+   "system4": "GB-SYSTEM4"
+  - 
+   "system1": "US-SYSTEM1"
+   "system2": "US-SYSTEM2"
+   "system3": "US-SYSTEM3"
+   "system4": "US-SYSTEM4"
+  - 
+   "system1": "IND-SYSTEM1"
+   "system2": "IND-SYSTEM2"
+   "system3": "IND-SYSTEM3"
+   "system4": "IND-SYSTEM4"
