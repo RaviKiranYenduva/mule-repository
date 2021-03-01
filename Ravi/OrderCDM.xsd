@@ -1,0 +1,40 @@
+?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="Order">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="orderID"/>
+        <xs:element ref="orderlines"/>
+        <xs:element ref="status"/>
+        <xs:element ref="OrderOwner"/>
+        <xs:element ref="Priority"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="orderID" type="xs:integer"/>
+  <xs:element name="orderlines">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="orderline"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="orderline">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="lineID"/>
+        <xs:element ref="productID"/>
+        <xs:element ref="quantity"/>
+        <xs:element ref="requiredByDate"/>
+      </xs:sequence>
+      <xs:attribute name="Id" type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="lineID" type="xs:integer"/>
+  <xs:element name="productID" type="xs:string"/>
+  <xs:element name="quantity" type="xs:decimal"/>
+  <xs:element name="requiredByDate" type="xs:dateTime"/>
+  <xs:element name="status" type="xs:string"/>
+  <xs:element name="OrderOwner" type="xs:string"/>
+  <xs:element name="Priority" type="xs:string"/>
+</xs:schema>
