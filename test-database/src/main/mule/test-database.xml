@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="54d3bb94-5a74-43ef-ae49-be99f0019ded" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="cccd5aa8-df28-4de8-9b8e-4420373c9f13" >
+		<db:my-sql-connection host="services.mythicalcorp.com" port="3306" user="product" password="Mule1379" database="products_test" />
+	</db:config>
+	<flow name="test-databaseFlow" doc:id="c0eef491-ca68-4b45-b03e-b53e0c2e7d5d" >
+		<http:listener doc:name="Listener" doc:id="a7843c43-aed7-4953-9c7c-a50178fdfd1c" path="/testDB" config-ref="HTTP_Listener_config"/>
+		<db:select doc:name="Select" doc:id="83708e2a-158f-477f-aa87-64042d66586d" config-ref="Database_Config">
+			<db:sql >SELECT  p.id, p.name, p.description, p.product_number, p.manufactured, p.colors, p.categories, p.stock, p.safety_stock_level, p.standard_cost, p.list_price, p.size, p.size_unit_measure_code, p.weight, p.weight_unit_measure_code, p.days_to_manufacture, p.images,  p.modified_date, p.created_date
+FROM product p
+LIMIT 10</db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="02ff955a-1cd5-497d-9292-6a32ef8ca52b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
