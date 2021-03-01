@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<anypoint-mq:config name="Anypoint_MQ_Config" doc:name="Anypoint MQ Config" doc:id="5a4678db-678e-4aa7-a475-5b7d558e110e" >
+		<anypoint-mq:connection clientId="92d7f53f310f4aa3924b0685ac59ccb6" clientSecret="7008e5D689D643b09607c8f57fa84D23" />
+	</anypoint-mq:config>
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="f6489464-bf52-40e2-8a1b-9dcb553a9c26" />
+	<flow name="ravi-test-reliabilitypatternFlow" doc:id="f262ad09-ceb9-4653-82a2-152871cd5777" >
+		<anypoint-mq:subscriber doc:name="Subscriber" doc:id="de7c16ed-09df-42f6-bcba-b4108bda6fc6" config-ref="Anypoint_MQ_Config" destination="TestRaviQueue1">
+			<reconnect frequency="120000"/>
+		</anypoint-mq:subscriber>
+		<logger level="INFO" doc:name="Logger" doc:id="aba06d07-2cfe-476b-bcb2-bbea1dd2f19a" message="#['****Start of Delivery Count is' ++ attributes.deliveryCount]" />
+		<logger level="INFO" doc:name="Logger" doc:id="39fd5bb0-cbc2-4449-a0de-1211c6649356" message="#[payload ++ '---Length---' ++ sizeOf(payload)]"/>
+		<validation:validate-size doc:name="Validate size" doc:id="87c8659d-dad1-4188-b8a4-90e102a20389" value="#[payload]" max="8" message="Payload size check is failed" config-ref="Validation_Config"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="37d31d60-edc7-491b-9910-30477287ed60" type="VALIDATION:INVALID_SIZE">
+				<logger level="INFO" doc:name="Logger" doc:id="981df3eb-9d95-4ae6-8680-ead25ef0ff4a" message="#['Error Block---' ++ attributes.deliveryCount]"/>
+				<logger level="INFO" doc:name="Logger" doc:id="25e80b68-a425-4740-b17e-51c6cd5dd2e0" message="#['End of Delivery Count is' ++ attributes.deliveryCount]"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
