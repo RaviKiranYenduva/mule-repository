@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<flow name="error-handler" doc:id="6c1446b9-44cc-4e30-a59e-5a5b2cc09312" >
+    <anypoint-mq:subscriber doc:name="fetch from error-queue" doc:id="0712b6f4-4e3b-447a-b421-9f26bd4a721c" config-ref="Anypoint_MQ_Config" destination="error-queue" acknowledgementMode="MANUAL"/>
+    <ee:transform doc:name="Transform Message" doc:id="d188d824-1e12-4045-bd67-076df6a53ac4" >
+      <ee:message >
+      </ee:message>
+      <ee:variables >
+        <ee:set-variable variableName="redelivery_count" ><![CDATA[%dw 2.0
+output application/java
+---
+attributes.properties.count]]></ee:set-variable>
+        <ee:set-variable variableName="sourceQueueName" ><![CDATA[%dw 2.0
+output application/java
+---
+payload.sourceQueueName]]></ee:set-variable>
+        <ee:set-variable variableName="ackToken" ><![CDATA[%dw 2.0
+output application/java
+---
+attributes.ackToken]]></ee:set-variable>
+      </ee:variables>
+    </ee:transform>
+    <logger level="INFO" doc:name="log redelivery count" doc:id="7079087e-16f6-4eef-84cd-2f1b28520baf" message="#[vars]" />
+    <choice doc:name="Choice" doc:id="26346a38-1c82-45a4-9666-50e4cadeda4c" >
+      <when expression="#[vars.redelivery_count &gt;= 3]">
+        <logger level="INFO" doc:name="Logger" doc:id="7a071474-7747-4e0c-9b9f-b15cb1f8792d" message="redelivery count is :  #[vars.redelivery_count]"/>
+        <anypoint-mq:publish doc:name="Publish to dlq" doc:id="572e6516-17b5-4989-bdf4-ef483f0f80cc" config-ref="Anypoint_MQ_Config" destination="dlq">
+          <anypoint-mq:body ><![CDATA[#[payload.data]]]></anypoint-mq:body>
+          <anypoint-mq:properties ><![CDATA[#[output application/java
+---
+{
+  count : vars.'redelivery_count'
+}]]]></anypoint-mq:properties>
+        </anypoint-mq:publish>
+      </when>
+      <otherwise >
+        <logger level="INFO" doc:name="Logger" doc:id="bd85943c-3d46-4d72-9079-be3e1e499732" message="redelivery count is :  #[vars.redelivery_count]"/>
+        <anypoint-mq:publish doc:name="Publish to source-queue" doc:id="84e9bd01-28cb-4d43-a859-c1bc056f0588" config-ref="Anypoint_MQ_Config" destination="#[vars.sourceQueueName]">
+          <anypoint-mq:body ><![CDATA[#[payload.data]]]></anypoint-mq:body>
+          <anypoint-mq:properties ><![CDATA[#[output application/java
+---
+{
+  count : vars.'redelivery_count'
+}]]]></anypoint-mq:properties>
+        </anypoint-mq:publish>
+      </otherwise>
+    </choice>
+    <anypoint-mq:ack doc:name="Ack" doc:id="ff06b119-204b-47ae-8672-2e78a29b9de2" config-ref="Anypoint_MQ_Config" ackToken="#[vars.ackToken]"/>
+  </flow>
+	
+	
+	
+	</mule>
