@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<os:config name="ObjectStore_Config" doc:name="ObjectStore Config" doc:id="f2fb2a88-c97a-4133-a75e-efced153765e" />
+	<os:object-store name="ravi-os" doc:name="Object store" doc:id="4f56077a-9416-435a-b082-9ebcc240950c" config-ref="ObjectStore_Config" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="5d5cda73-0a62-4fd1-bdb0-5df0762db920" >
+		<db:my-sql-connection host="services.mythicalcorp.com" port="3306" user="product" password="Mule1379" database="products_test" />
+	</db:config>
+	<anypoint-mq:config name="Anypoint_MQ_Config" doc:name="Anypoint MQ Config" doc:id="bd7f95e5-9dcd-4bb1-a005-e9bb4e51d50d" >
+		<anypoint-mq:connection clientId="92d7f53f310f4aa3924b0685ac59ccb6" clientSecret="7008e5D689D643b09607c8f57fa84D23" />
+	</anypoint-mq:config>
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="c967a471-d955-41ad-9f3b-8b162b66d5d1" />
+	<flow name="shcheduler" doc:id="f783436e-db97-493d-8734-701e392d1f70" >
+		<scheduler doc:name="Scheduler" doc:id="f412a935-2c3c-4655-a1d8-62f037c6b733" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="2" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<set-variable value="5" doc:name="set Batch size" doc:id="9d54cc8c-3a30-40d8-b570-2f6612e729cd" variableName="batchSize"/>
+		<flow-ref doc:name="Flow Reference" doc:id="4ff785e5-08de-4259-ad7e-db31d620ea18" name="source-poller"/>
+	</flow>
+	<flow name="source-poller" doc:id="e624c424-b3fe-41f7-bdb2-62a4ac991a93" >
+		<os:retrieve doc:name="Retrieve" doc:id="689143f0-3904-4cca-aff9-fe455fb7f5e9" key="api_hwm_id" objectStore="ravi-os" target="api_hwm_id">
+			<os:default-value><![CDATA[#[3501]]]></os:default-value>
+		</os:retrieve>
+		<db:select doc:name="FetchSourceRecords" doc:id="cd54ec37-8e0a-47c4-9c59-25ff5c9e753f" config-ref="Database_Config">
+			<db:sql >select * from products_test.product p where id &gt; :hwm order by id limit 5</db:sql>
+			<db:input-parameters ><![CDATA[#[%dw 2.0
+output application/java
+---
+{
+	 hwm : vars.api_hwm_id,
+	 rec_count : vars.batchSize as Number
+}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="337ab22f-7fbb-4650-9237-247156de2a17" message="#['Last High Water mark value in the Object Store is - ' ++ vars.api_hwm_id]" />
+		<try doc:name="Try" doc:id="ba953b6b-5741-4281-b87b-c2f63b901c0a" transactionalAction="ALWAYS_BEGIN">
+			<foreach doc:name="For Each" doc:id="e14fb61a-556b-48fc-a810-1692c8c61346" collection="payload">
+			<logger level="INFO" doc:name="Logger" doc:id="9204bcea-52f4-4bed-ae51-55f3a7533e7f" message="#['Inside For each Counter -' ++ vars.counter ++ '--ID is --' ++ payload.id]" />
+			<logger level="INFO" doc:name="Logger" doc:id="fc437dd6-edc3-411a-8389-91381fb843c4" message="payload" />
+			<set-variable value="#[payload.id as Number]" doc:name="SetCurrentID" doc:id="9bcc1f14-d44d-4149-8bc4-11ff6c357a5b" variableName="CurrentID" />
+				<validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="b4fc8086-08f2-4f8b-a079-802d3cd80266" value="#[vars.CurrentID]" maxValue="3900" config-ref="Validation_Config" />
+				<anypoint-mq:publish doc:name="Publish To Order Source Queue" doc:id="cbafcca9-b525-468c-9e3e-c088a6a14881" config-ref="Anypoint_MQ_Config" destination="ravi-src-order-queue"/>
+				<set-variable value="#[vars.CurrentID]" doc:name="SetLatestInsertedID" doc:id="6bc4279c-377f-4bda-95c1-bcbd6d889453" variableName="lastID"/>
+		</foreach>
+			<os:store doc:name="Update HWM" doc:id="f6d7b00b-2de2-4755-8872-d4fe35f49de8" key="api_hwm_id" objectStore="ravi-os" failOnNullValue="false">
+			<os:value><![CDATA[#[vars.lastID]]]></os:value>
+		</os:store>
+			<os:retrieve doc:name="Retrieve HMW" doc:id="6d025fd2-83cb-4736-8528-1c911ee4293f" key="api_hwm_id" objectStore="ravi-os" target="commited_value"/>
+			<logger level="INFO" doc:name="Logger" doc:id="ccc82258-5034-4256-a6b0-8ca32fa3a272" message="#[&quot;Success ---HWM Current value: &quot; ++ vars.commited_value ++ ' ---HWM Prev Value---' ++ vars.api_hwm_id]"/>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="56e10304-0746-4b12-9508-4a09183a627d" >
+					<logger level="INFO" doc:name="Logger" doc:id="66a961f6-1f73-476b-bb03-a14b2018f9ca" message="Rollback all the messages"/>
+				<os:store doc:name="Update HWM" doc:id="66a41fcc-51b6-46c8-999a-ade966980bc5" key="api_hwm_id" objectStore="ravi-os" failOnNullValue="false">
+			<os:value><![CDATA[#[vars.lastID]]]></os:value>
+		</os:store>
+				<os:retrieve doc:name="Retrieve HWM" doc:id="391626f9-1913-4f09-ae66-cdf5397bf50d" key="api_hwm_id" objectStore="ravi-os" target="commited_value"/>
+			<logger level="INFO" doc:name="Logger" doc:id="92266464-2be3-4c7f-8f38-961dbf1e4847" message="#[&quot;Error ---HWM Current value: &quot; ++ vars.commited_value ++ ' ---HWM Prev Value---' ++ vars.api_hwm_id]"/>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+	</flow>
+	
+</mule>
